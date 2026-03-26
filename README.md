@@ -1,5 +1,8 @@
 # 🤖 Business Insights Agent
 
+> 🌐 **[View Live Interactive Dashboard](https://megghasharma.github.io/business-insights-agent/)** — Try the agent demo, explore the architecture & dataset overview
+
+
 > An AI-powered data analysis agent that answers natural-language business questions using Claude's tool-use capabilities.
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
