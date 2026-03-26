@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Business Insights Agent — Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f14; --bg-card: #16161e; --bg-chat: #1c1c26; --border: #2a2a3a;
+    --text: #eaeaf0; --text-sec: #9595ad; --text-dim: #5e5e78;
+    --purple: #a855f7; --purple-dim: rgba(168,85,247,0.12);
+    --teal: #14b8a6; --teal-dim: rgba(20,184,166,0.12);
+    --pink: #ec4899; --pink-dim: rgba(236,72,153,0.12);
+    --blue: #6366f1; --blue-dim: rgba(99,102,241,0.12);
+    --orange: #f97316; --orange-dim: rgba(249,115,22,0.12);
+    --radius: 12px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .dots-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.06; background-image: radial-gradient(rgba(168,85,247,0.5) 1px, transparent 1px); background-size: 32px 32px; }
+  .app { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 32px 24px; }
+  .hdr { margin-bottom: 32px; display: flex; align-items: flex-start; gap: 16px; }
+  .hdr-icon { width: 52px; height: 52px; border-radius: 14px; background: linear-gradient(135deg, #a855f7, #14b8a6); display: flex; align-items: center; justify-content: center; font-size: 26px; box-shadow: 0 0 40px rgba(168,85,247,0.2); flex-shrink: 0; }
+  .hdr h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+  .hdr p { color: var(--text-sec); font-size: 14px; margin-top: 4px; }
+  .tag { display: inline-flex; gap: 5px; align-items: center; background: var(--purple-dim); color: var(--purple); padding: 3px 10px; border-radius: 16px; font-size: 11px; font-weight: 600; border: 1px solid rgba(168,85,247,0.2); margin-left: 10px; }
+  .tabs { display: flex; gap: 3px; background: var(--bg-card); border-radius: 10px; padding: 3px; border: 1px solid var(--border); margin-bottom: 28px; width: fit-content; }
+  .tab-btn { padding: 9px 18px; border-radius: 8px; border: none; background: transparent; color: var(--text-dim); font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+  .tab-btn:hover { color: var(--text-sec); }
+  .tab-btn.on { background: var(--purple-dim); color: var(--purple); }
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; transition: all 0.3s; }
+  .card:hover { border-color: rgba(168,85,247,0.2); }
+  .card h3 { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+  .card .sub { font-size: 11px; color: var(--text-dim); margin-bottom: 16px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 28px; }
+  .chat-container { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; max-width: 900px; margin: 0 auto; }
+  .chat-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .chat-header .status { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .chat-header span { font-size: 13px; font-weight: 600; }
+  .chat-body { padding: 20px; max-height: 600px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+  .msg { display: flex; gap: 10px; max-width: 85%; }
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+  .msg-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .msg.agent .msg-avatar { background: var(--purple-dim); }
+  .msg.user .msg-avatar { background: var(--teal-dim); }
+  .msg-bubble { padding: 12px 16px; border-radius: 12px; font-size: 13px; line-height: 1.6; }
+  .msg.agent .msg-bubble { background: var(--bg-chat); border: 1px solid var(--border); color: var(--text-sec); }
+  .msg.user .msg-bubble { background: var(--purple-dim); border: 1px solid rgba(168,85,247,0.2); color: var(--text); }
+  .tool-call { background: rgba(20,184,166,0.06); border: 1px solid rgba(20,184,166,0.15); border-radius: 8px; padding: 10px 14px; font-family: 'JetBrains Mono'; font-size: 11px; margin: 8px 0; color: var(--teal); }
+  .tool-call .tool-name { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+  .tool-call .tool-result { color: var(--text-dim); margin-top: 6px; }
+  .chat-input { display: flex; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--border); }
+  .chat-input input { flex: 1; padding: 10px 14px; background: var(--bg-chat); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'Outfit'; font-size: 13px; outline: none; }
+  .chat-input input:focus { border-color: var(--purple); }
+  .chat-input button { padding: 10px 20px; background: linear-gradient(135deg, #a855f7, #6366f1); border: none; border-radius: 8px; color: #fff; font-weight: 600; font-family: inherit; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+  .chat-input button:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(168,85,247,0.3); }
+  .sample-qs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .sample-q { padding: 8px 14px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--text-sec); font-family: 'Outfit'; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+  .sample-q:hover { border-color: var(--purple); color: var(--purple); background: var(--purple-dim); }
+  .arch-diagram { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; padding: 30px 20px; }
+  .arch-box { padding: 16px 20px; border-radius: 10px; text-align: center; min-width: 160px; border: 1px solid var(--border); }
+  .arch-box .arch-icon { font-size: 28px; margin-bottom: 6px; }
+  .arch-box .arch-title { font-size: 13px; font-weight: 600; }
+  .arch-box .arch-sub { font-size: 10px; color: var(--text-dim); margin-top: 3px; }
+  .arch-arrow { font-size: 20px; color: var(--purple); }
+  .tools-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .tool-card { padding: 16px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,0.01); transition: all 0.3s; }
+  .tool-card:hover { border-color: rgba(168,85,247,0.3); transform: translateY(-2px); }
+  .tool-card .tc-name { font-size: 13px; font-weight: 600; color: var(--purple); font-family: 'JetBrains Mono'; margin-bottom: 6px; }
+  .tool-card .tc-desc { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .kpi { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+  .kpi .kpi-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 5px; }
+  .kpi .kpi-val { font-size: 26px; font-weight: 700; font-family: 'JetBrains Mono'; }
+  .footer { text-align: center; margin-top: 40px; padding: 20px; border-top: 1px solid var(--border); color: var(--text-dim); font-size: 12px; }
+  .footer a { color: var(--purple); text-decoration: none; }
+  @media (max-width: 768px) { .grid2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="dots-bg"></div>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef, useEffect } = React;
+const SAMPLE_QUESTIONS = ['Which region has the highest profit margin?', 'Compare online vs in-store performance', 'Detect anomalies in discount patterns'];
+const TOOLS = [
+  { name: 'inspect_data', desc: 'Dataset overview: shape, types, statistics, sample rows' },
+  { name: 'query_data', desc: 'Execute arbitrary Pandas queries on the loaded dataset' },
+  { name: 'calculate_metric', desc: 'Compute metrics: mean, sum, correlation, growth rate, percentile' },
+  { name: 'detect_anomalies', desc: 'Find statistical outliers using IQR or Z-score methods' },
+  { name: 'generate_summary', desc: 'Produce structured executive summary with key findings' },
+];
+const DEMO_CONVERSATIONS = {
+  'Which region has the highest profit margin?': [
+    { role: 'user', text: 'Which region has the highest profit margin and why?' },
+    { role: 'agent', text: 'Analysing regional profit margins...', tools: [
+      { name: 'inspect_data', params: '{}', result: 'Dataset: 1,200 rows x 14 columns' },
+      { name: 'query_data', params: '{"query": "df.groupby(Region)..."}', result: 'North: £2.4M rev, £680K profit | South: £2.1M rev, £520K | East: £1.8M rev, £590K | West: £1.5M rev, £380K' },
+      { name: 'calculate_metric', params: '{"metric": "profit_margin"}', result: 'North: 28.3% | East: 32.8% | South: 24.8% | West: 25.3%' },
+    ]},
+    { role: 'agent', text: 'The East region has the highest profit margin at 32.8%, despite generating less total revenue than the North.\n\nKey drivers:\n• Lower cost-to-revenue ratio (66.7% vs North 70.8%)\n• Higher proportion of premium product sales\n• Fewer discounting campaigns (12% vs 23% nationally)' },
+  ],
+  'Compare online vs in-store performance': [
+    { role: 'user', text: 'Compare online vs in-store channel performance' },
+    { role: 'agent', text: 'Running channel comparison...', tools: [
+      { name: 'query_data', params: '{"query": "df.groupby(Channel).agg(...)"}', result: 'Online: £3.8M rev, £1.1M profit, 7.2 sat | In-Store: £4.0M rev, £1.0M profit, 8.1 sat' },
+      { name: 'calculate_metric', params: '{"metric": "growth_rate"}', result: 'Online: +18.4% YoY | In-Store: +3.2% YoY' },
+    ]},
+    { role: 'agent', text: 'Online is more profitable per pound of revenue, while In-Store leads on satisfaction.\n\n• Online: £3.8M revenue, 28.9% margin, +18.4% YoY growth\n• In-Store: £4.0M revenue, 25.0% margin, +3.2% growth\n\nOnline is growing 5.7x faster. Recommend investing in digital experience.' },
+  ],
+  'Detect anomalies in discount patterns': [
+    { role: 'user', text: 'Detect anomalies in discount patterns' },
+    { role: 'agent', text: 'Running anomaly detection on discounts...', tools: [
+      { name: 'detect_anomalies', params: '{"column": "Discount", "method": "iqr"}', result: '23 anomalies detected (1.9%). Range: discounts > 42%. Peak: 3 at 65% in March. 14 of 23 in West region.' },
+    ]},
+    { role: 'agent', text: '23 anomalous discount transactions detected (1.9% of records), all exceeding 42%.\n\n⚠️ Red flags:\n• 3 transactions at 65% discount in March\n• 14 of 23 concentrated in West region\n• These generated -8.3% average profit margin\n\nRecommendation: audit West region discount approvals and implement 40% hard cap.' },
+  ],
+};
+function ChartCanvas({ config, height = 240 }) {
+  const ref = useRef(null); const chartRef = useRef(null);
+  useEffect(() => { if (chartRef.current) chartRef.current.destroy(); chartRef.current = new Chart(ref.current.getContext('2d'), config); return () => { if (chartRef.current) chartRef.current.destroy(); }; }, [config]);
+  return React.createElement('canvas', { ref: ref, style: { width: '100%', height: height + 'px' } });
+}
+const TAB_NAMES = ['Agent Demo', 'Architecture', 'Dataset Overview'];
+function App() {
+  const [tab, setTab] = useState(0);
+  return React.createElement('div', { className: 'app' },
+    React.createElement('div', { className: 'hdr' },
+      React.createElement('div', { className: 'hdr-icon' }, '🤖'),
+      React.createElement('div', null,
+        React.createElement('h1', null, 'Business Insights Agent ', React.createElement('span', { className: 'tag' }, 'MCP-Aligned')),
+        React.createElement('p', null, 'AI-powered data analysis agent using Claude tool-use — ask business questions in plain English'))),
+    React.createElement('div', { className: 'tabs' }, TAB_NAMES.map(function(t, i) { return React.createElement('button', { key: t, className: 'tab-btn ' + (tab === i ? 'on' : ''), onClick: function() { setTab(i); } }, t); })),
+    tab === 0 && React.createElement(AgentDemo, null),
+    tab === 1 && React.createElement(ArchTab, null),
+    tab === 2 && React.createElement(DatasetTab, null),
+    React.createElement('div', { className: 'footer' }, 'Built by ', React.createElement('a', { href: 'https://github.com/megghasharma', target: '_blank' }, 'Megha Sharma'), ' — MSc Business Analytics, Swansea University · Python, Claude API (Tool Use)'));
+}
+function AgentDemo() {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [typing, setTyping] = useState(false);
+  const chatRef = useRef(null);
+  var askQuestion = function(q) {
+    var question = q || input; if (!question.trim()) return; setInput('');
+    var conv = DEMO_CONVERSATIONS[question];
+    if (conv) {
+      setMessages(function(prev) { return prev.concat([{ role: 'user', text: question }]); });
+      setTyping(true);
+      var delay = 800;
+      conv.slice(1).forEach(function(msg, idx) {
+        setTimeout(function() {
+          setMessages(function(prev) { return prev.concat([msg]); });
+          if (idx === conv.length - 2) setTyping(false);
+        }, delay);
+        delay += msg.tools ? 2000 : 1200;
+      });
+    } else {
+      setMessages(function(prev) { return prev.concat([{ role: 'user', text: question }, { role: 'agent', text: 'Great question! In the live version, Claude would autonomously call the right tools to analyse your dataset. Try one of the sample questions for a full demo.' }]); });
+    }
+  };
+  useEffect(function() { if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight; }, [messages, typing]);
+  return React.createElement('div', null,
+    React.createElement('div', { style: { textAlign: 'center', marginBottom: 16 } },
+      React.createElement('div', { style: { fontSize: 12, color: 'var(--text-dim)', marginBottom: 10 } }, 'Try a sample question:'),
+      React.createElement('div', { className: 'sample-qs', style: { justifyContent: 'center' } }, SAMPLE_QUESTIONS.map(function(q, i) { return React.createElement('button', { key: i, className: 'sample-q', onClick: function() { askQuestion(q); } }, '💬 ' + q); }))),
+    React.createElement('div', { className: 'chat-container' },
+      React.createElement('div', { className: 'chat-header' },
+        React.createElement('div', { className: 'status' }),
+        React.createElement('span', null, 'Business Insights Agent'),
+        React.createElement('span', { style: { marginLeft: 'auto', fontSize: 11, color: 'var(--text-dim)', fontFamily: 'JetBrains Mono' } }, 'claude-sonnet · tool-use')),
+      React.createElement('div', { className: 'chat-body', ref: chatRef },
+        messages.length === 0 && React.createElement('div', { style: { textAlign: 'center', padding: '40px 20px', color: 'var(--text-dim)' } },
+          React.createElement('div', { style: { fontSize: 40, marginBottom: 12 } }, '🤖'),
+          React.createElement('div', { style: { fontSize: 14, marginBottom: 4 } }, 'Drop in any CSV. Ask a business question.'),
+          React.createElement('div', { style: { fontSize: 12 } }, 'The agent autonomously inspects, queries, and summarises.')),
+        messages.map(function(m, i) {
+          return React.createElement('div', { key: i },
+            React.createElement('div', { className: 'msg ' + (m.role === 'user' ? 'user' : 'agent') },
+              React.createElement('div', { className: 'msg-avatar' }, m.role === 'user' ? '👤' : '🤖'),
+              React.createElement('div', { className: 'msg-bubble' },
+                m.tools && m.tools.map(function(t, ti) { return React.createElement('div', { className: 'tool-call', key: ti }, React.createElement('div', { className: 'tool-name' }, '⚡ ' + t.name + '(' + t.params + ')'), React.createElement('div', { className: 'tool-result' }, '→ ' + t.result)); }),
+                m.text.split('\n').map(function(line, li) { return React.createElement('div', { key: li, style: { marginBottom: line === '' ? 8 : 2 } }, line.startsWith('•') ? React.createElement('span', { style: { paddingLeft: 8 } }, line) : line.startsWith('⚠') ? React.createElement('span', { style: { color: 'var(--orange)' } }, line) : line); })
+              )
+            )
+          );
+        }),
+        typing && React.createElement('div', { className: 'msg agent' }, React.createElement('div', { className: 'msg-avatar' }, '🤖'), React.createElement('div', { className: 'msg-bubble', style: { display: 'flex', gap: 6 } }, React.createElement('span', { style: { animation: 'pulse 1s infinite' } }, '●'), React.createElement('span', { style: { animation: 'pulse 1s infinite 0.2s' } }, '●'), React.createElement('span', { style: { animation: 'pulse 1s infinite 0.4s' } }, '●')))
+      ),
+      React.createElement('div', { className: 'chat-input' },
+        React.createElement('input', { placeholder: 'Ask a business question...', value: input, onChange: function(e) { setInput(e.target.value); }, onKeyDown: function(e) { if (e.key === 'Enter') askQuestion(); } }),
+        React.createElement('button', { onClick: function() { askQuestion(); } }, 'Ask →')
+      )
+    )
+  );
+}
+function ArchTab() {
+  var boxes = [
+    { icon: '💬', title: 'User Query', sub: 'Plain English', bg: 'var(--teal-dim)', bc: 'rgba(20,184,166,0.3)' },
+    { icon: '🧠', title: 'Claude API', sub: 'Tool Use / Function Calling', bg: 'var(--purple-dim)', bc: 'rgba(168,85,247,0.3)' },
+    { icon: '⚙️', title: 'Tool Execution', sub: 'Python / Pandas', bg: 'var(--orange-dim)', bc: 'rgba(249,115,22,0.3)' },
+    { icon: '📊', title: 'Results', sub: 'Fed back into context', bg: 'var(--blue-dim)', bc: 'rgba(99,102,241,0.3)' },
+  ];
+  return React.createElement('div', null,
+    React.createElement('div', { className: 'card', style: { marginBottom: 24 } },
+      React.createElement('h3', null, 'Agent Architecture'),
+      React.createElement('div', { className: 'sub' }, 'MCP-aligned agentic loop with Claude tool orchestration'),
+      React.createElement('div', { className: 'arch-diagram' }, boxes.map(function(b, i) { return React.createElement(React.Fragment, { key: i }, React.createElement('div', { className: 'arch-box', style: { background: b.bg, borderColor: b.bc } }, React.createElement('div', { className: 'arch-icon' }, b.icon), React.createElement('div', { className: 'arch-title' }, b.title), React.createElement('div', { className: 'arch-sub' }, b.sub)), i < boxes.length - 1 && React.createElement('div', { className: 'arch-arrow' }, '→')); })),
+      React.createElement('div', { style: { textAlign: 'center', marginTop: 12, fontSize: 12, color: 'var(--text-dim)' } }, 'The agent loop continues until Claude determines the question is fully answered')),
+    React.createElement('div', { className: 'card' },
+      React.createElement('h3', null, 'Available Tools'),
+      React.createElement('div', { className: 'sub' }, 'Claude automatically discovers and orchestrates these tools'),
+      React.createElement('div', { className: 'tools-grid' }, TOOLS.map(function(t, i) { return React.createElement('div', { className: 'tool-card', key: i }, React.createElement('div', { className: 'tc-name' }, '⚡ ' + t.name), React.createElement('div', { className: 'tc-desc' }, t.desc)); })))
+  );
+}
+function DatasetTab() {
+  var kpis = [{ l: 'Rows', v: '1,200', c: '#a855f7' }, { l: 'Columns', v: '14', c: '#14b8a6' }, { l: 'Total Revenue', v: '£7.8M', c: '#6366f1' }, { l: 'Avg Satisfaction', v: '7.6/10', c: '#f97316' }];
+  return React.createElement('div', null,
+    React.createElement('div', { className: 'kpi-row' }, kpis.map(function(k, i) { return React.createElement('div', { className: 'kpi', key: i }, React.createElement('div', { className: 'kpi-label' }, k.l), React.createElement('div', { className: 'kpi-val', style: { color: k.c } }, k.v)); })),
+    React.createElement('div', { className: 'grid2' },
+      React.createElement('div', { className: 'card' }, React.createElement('h3', null, 'Revenue by Region'), React.createElement('div', { className: 'sub' }, 'Sales distribution across UK regions'), React.createElement(ChartCanvas, { config: { type: 'bar', data: { labels: ['North', 'South', 'East', 'West'], datasets: [{ label: 'Revenue £M', data: [2.4, 2.1, 1.8, 1.5], backgroundColor: ['#a855f7', '#6366f1', '#14b8a6', '#f97316'], borderRadius: 6, barThickness: 36 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#5e5e78' } }, y: { grid: { color: 'rgba(42,42,58,0.5)' }, ticks: { color: '#5e5e78', callback: function(v) { return '£' + v + 'M'; } } } } } } })),
+      React.createElement('div', { className: 'card' }, React.createElement('h3', null, 'Product Category Mix'), React.createElement('div', { className: 'sub' }, 'Revenue share by product line'), React.createElement(ChartCanvas, { config: { type: 'doughnut', data: { labels: ['Electronics', 'Software', 'Services', 'Hardware', 'Accessories'], datasets: [{ data: [32, 24, 20, 14, 10], backgroundColor: ['#a855f7', '#6366f1', '#14b8a6', '#f97316', '#ec4899'], borderWidth: 0, borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'right', labels: { color: '#9595ad', padding: 12 } } } } } })),
+      React.createElement('div', { className: 'card' }, React.createElement('h3', null, 'Monthly Revenue Trend'), React.createElement('div', { className: 'sub' }, '12-month revenue with channel breakdown'), React.createElement(ChartCanvas, { config: { type: 'line', data: { labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], datasets: [{ label: 'Online', data: [280,310,295,340,365,390,380,410,395,420,445,480], borderColor: '#a855f7', backgroundColor: 'rgba(168,85,247,0.05)', fill: true, tension: 0.4, borderWidth: 2 }, { label: 'In-Store', data: [320,305,330,315,340,335,350,345,360,355,370,380], borderColor: '#14b8a6', fill: false, tension: 0.4, borderWidth: 2, borderDash: [5,5] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#9595ad' } } }, scales: { x: { grid: { display: false }, ticks: { color: '#5e5e78' } }, y: { grid: { color: 'rgba(42,42,58,0.5)' }, ticks: { color: '#5e5e78', callback: function(v) { return '£' + v + 'K'; } } } } } } })),
+      React.createElement('div', { className: 'card' }, React.createElement('h3', null, 'Satisfaction by Channel'), React.createElement('div', { className: 'sub' }, 'Average customer satisfaction scores'), React.createElement(ChartCanvas, { config: { type: 'radar', data: { labels: ['Speed', 'Quality', 'Support', 'Value', 'Experience'], datasets: [{ label: 'Online', data: [8.2, 7.8, 6.9, 7.5, 7.0], borderColor: '#a855f7', backgroundColor: 'rgba(168,85,247,0.1)', borderWidth: 2 }, { label: 'In-Store', data: [6.5, 8.1, 8.4, 7.2, 8.5], borderColor: '#14b8a6', backgroundColor: 'rgba(20,184,166,0.1)', borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { r: { angleLines: { color: 'rgba(42,42,58,0.5)' }, grid: { color: 'rgba(42,42,58,0.5)' }, pointLabels: { color: '#9595ad' }, ticks: { display: false }, min: 4, max: 10 } }, plugins: { legend: { labels: { color: '#9595ad' } } } } } }))
+    )
+  );
+}
+ReactDOM.render(React.createElement(App), document.getElementById('root'));
+</script>
+</body>
+</html>
